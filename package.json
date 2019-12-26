@@ -58,5 +58,5 @@
     "test:visual": "node test/runTest/server.js",
     "watch": "node build/build.js -w"
   },
-  "version": "0.1.1"
+  "version": "0.1.2"
 }
