@@ -34,7 +34,7 @@
     "slugify": "1.3.4",
     "socket.io": "2.2.0"
   },
-  "homepage": "",
+  "homepage": "https://github.com/Milley-Milley/mw-echarts#readme",
   "keywords": [
     "visualization",
     "canvas"
@@ -58,5 +58,13 @@
     "test:visual": "node test/runTest/server.js",
     "watch": "node build/build.js -w"
   },
-  "version": "0.1.2"
+  "version": "1.0.0",
+  "bugs": {
+    "url": "https://github.com/Milley-Milley/mw-echarts/issues"
+  },
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "author": "xiaoyi.shu@outlook.com"
 }

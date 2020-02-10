@@ -77,19 +77,55 @@ export default function (ecModel) {
                     p: (!point || isNaN(point[0]) || isNaN(point[1])) ? null : point
                 };
             });
+
+            const nodeEdgeMap = {}
+            edgeData.mapArray('value', function (value, idx) {
+                var edge = graph.getEdgeByIndex(idx);
+                var edgeModel = edge.getModel();
+                var eId = edgeModel.option.id
+                var nId1 = edge.node1.id
+                var nId2 = edge.node2.id
+                if (nodeEdgeMap[`${nId1},${nId2}`]) {
+                    nodeEdgeMap[`${nId1},${nId2}`].push(eId)
+                } else if (nodeEdgeMap[`${nId2},${nId1}`]) {
+                    nodeEdgeMap[`${nId2},${nId1}`].push(eId)
+                } else {
+                    nodeEdgeMap[`${nId1},${nId2}`] = [eId]
+                }
+            });
+
             var edges = edgeData.mapArray('value', function (value, idx) {
                 var edge = graph.getEdgeByIndex(idx);
                 var d = linearMap(value, edgeDataExtent, edgeLength);
                 if (isNaN(d)) {
                     d = (edgeLength[0] + edgeLength[1]) / 2;
                 }
+
                 var edgeModel = edge.getModel();
+                var eId = edgeModel.option.id
+                var nId1 = edge.node1.id
+                var nId2 = edge.node2.id
+                const directionK = nodeEdgeMap[`${nId1},${nId2}`] ? 1 : -1
+                const eIdsBetween = directionK === 1 ? nodeEdgeMap[`${nId1},${nId2}`] : nodeEdgeMap[`${nId2},${nId1}`]
+                const index = eIdsBetween.indexOf(eId)
+
+                let curveness = 0
+                if (eIdsBetween.length > 1) {
+                    curveness = Math.max(1/eIdsBetween.length, .05)
+                    curveness *= eIdsBetween.length % 2 ? Math.ceil(index / 2) : Math.ceil((index + 1) / 2)
+                    curveness -= eIdsBetween.length % 2 ? 0 : (.5/eIdsBetween.length)
+                    curveness *= (index % 2 ? 1 : -1) * directionK
+                } else {
+                    curveness = edgeModel.get('lineStyle.curveness') || 0
+                }
+
                 return {
                     n1: nodes[edge.node1.dataIndex],
                     n2: nodes[edge.node2.dataIndex],
                     d: d,
-                    curveness: edgeModel.get('lineStyle.curveness') || 0,
-                    ignoreForceLayout: edgeModel.get('ignoreForceLayout')
+                    curveness,
+                    ignoreForceLayout: edgeModel.get('ignoreForceLayout'),
+                    angle: 2 * Math.PI / eIdsBetween.length * index + Math.PI,
                 };
             });
 
@@ -126,7 +162,15 @@ export default function (ecModel) {
                         points[1] = points[1] || [];
                         vec2.copy(points[0], p1);
                         vec2.copy(points[1], p2);
-                        if (+e.curveness) {
+                        // if source = target, draw a circle
+                        if (p1[0] === p2[0] && p1[1] === p2[1]) {
+                            points[2] = {
+                                r: e.d, 
+                                angle: e.angle
+                            };
+                        } 
+                        // if curveness is asked
+                        else if (+e.curveness) {
                             points[2] = [
                                 (p1[0] + p2[0]) / 2 - (p1[1] - p2[1]) * e.curveness,
                                 (p1[1] + p2[1]) / 2 - (p2[0] - p1[0]) * e.curveness

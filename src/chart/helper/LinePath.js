@@ -31,6 +31,14 @@ function isLine(shape) {
     return isNaN(+shape.cpx1) || isNaN(+shape.cpy1);
 }
 
+function _cubicDerivativeAt(p0, p1, p2, p3, t) {
+    var onet = 1 - t;
+    return 3 * (
+        ((p1 - p0) * onet + 2 * (p2 - p1) * t) * onet
+        + (p3 - p2) * t * t
+    );
+}
+
 export default graphic.extendShape({
 
     type: 'ec-line',
@@ -66,9 +74,21 @@ export default graphic.extendShape({
         var shape = this.shape;
         var p = isLine(shape)
             ? [shape.x2 - shape.x1, shape.y2 - shape.y1]
-            : this._tangentAtCurve(t);
+            : this._tangentAtCurve(shape, t);
         return vec2.normalize(p, p);
     },
-    _tangentAtCurve: bezierCurveProto.tangentAt
+    // _tangentAtCurve: bezierCurveProto.tangentAt
+    _tangentAtCurve: function (shape, t) {
+        var cpx2 = shape.cpx2;
+        var cpy2 = shape.cpy2;
+
+        if (!isNaN(cpx2) && !isNaN(cpy2)) {
+            return [
+                _cubicDerivativeAt(shape.x1, shape.cpx1, shape.cpx2, shape.x2, t),
+                _cubicDerivativeAt(shape.y1, shape.cpy1, shape.cpy2, shape.y2, t)
+            ]
+        }
+        return bezierCurveProto.tangentAt.call(this, t)
+    }
 
 });
